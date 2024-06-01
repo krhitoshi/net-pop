@@ -417,6 +417,7 @@ module Net
     def initialize(addr, port = nil, isapop = false)
       @address = addr
       @ssl_params = POP3.ssl_params
+      @startssl = false
       @port = port
       @apop = isapop
 
@@ -442,6 +443,10 @@ module Net
       return !@ssl_params.nil?
     end
 
+    def startssl?
+      @startssl
+    end
+
     # :call-seq:
     #    Net::POP#enable_ssl(params = {})
     #
@@ -459,10 +464,30 @@ module Net
       end
     end
 
+    def enable_startssl(verify_or_params = {}, certs = nil, port = nil)
+      @startssl = true
+      enable_ssl(verify_or_params, certs, port)
+    end
+
     # Disable SSL for all new instances.
     def disable_ssl
       @ssl_params = nil
     end
+
+    def ssl_connect(s)
+      raise 'openssl library not installed' unless defined?(OpenSSL)
+      context = OpenSSL::SSL::SSLContext.new
+      context.set_params(@ssl_params)
+      s = OpenSSL::SSL::SSLSocket.new(s, context)
+      s.hostname = @address
+      s.sync_close = true
+      ssl_socket_connect(s, @open_timeout)
+      if context.verify_mode != OpenSSL::SSL::VERIFY_NONE
+        s.post_connection_check(@address)
+      end
+      s
+    end
+    private :ssl_connect
 
     # Provide human-readable stringification of class state.
     def inspect
@@ -543,17 +568,8 @@ module Net
       s = Timeout.timeout(@open_timeout, Net::OpenTimeout) do
         TCPSocket.open(@address, port)
       end
-      if use_ssl?
-        raise 'openssl library not installed' unless defined?(OpenSSL)
-        context = OpenSSL::SSL::SSLContext.new
-        context.set_params(@ssl_params)
-        s = OpenSSL::SSL::SSLSocket.new(s, context)
-        s.hostname = @address
-        s.sync_close = true
-        ssl_socket_connect(s, @open_timeout)
-        if context.verify_mode != OpenSSL::SSL::VERIFY_NONE
-          s.post_connection_check(@address)
-        end
+      if use_ssl? && !startssl?
+        s = ssl_connect(s)
       end
       @socket = InternetMessageIO.new(s,
                                       read_timeout: @read_timeout,
@@ -562,23 +578,13 @@ module Net
       on_connect
       @command = POP3Command.new(@socket)
 
-      @ssl_params = POP3.create_ssl_params({}, nil)
-      @command.stls
-      raise 'openssl library not installed' unless defined?(OpenSSL)
-      context = OpenSSL::SSL::SSLContext.new
-      context.set_params(@ssl_params)
-      s = OpenSSL::SSL::SSLSocket.new(s, context)
-      s.hostname = @address
-      s.sync_close = true
-      ssl_socket_connect(s, @open_timeout)
-      if context.verify_mode != OpenSSL::SSL::VERIFY_NONE
-        s.post_connection_check(@address)
+      if startssl?
+        @command.stls
+        @socket = InternetMessageIO.new(ssl_connect(s),
+                                        read_timeout: @read_timeout,
+                                        debug_output: @debug_output)
+        @command = POP3Command.new(@socket, apop_stamp_check: false)
       end
-
-      @socket = InternetMessageIO.new(s,
-                              read_timeout: @read_timeout,
-                              debug_output: @debug_output)
-      @command = POP3Command.new(@socket, apop_stamp_check: false)
 
       if apop?
         @command.apop account, password
