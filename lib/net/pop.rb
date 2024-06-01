@@ -561,6 +561,25 @@ module Net
       logging "POP session started: #{@address}:#{@port} (#{@apop ? 'APOP' : 'POP'})"
       on_connect
       @command = POP3Command.new(@socket)
+
+      @ssl_params = POP3.create_ssl_params({}, nil)
+      @command.stls
+      raise 'openssl library not installed' unless defined?(OpenSSL)
+      context = OpenSSL::SSL::SSLContext.new
+      context.set_params(@ssl_params)
+      s = OpenSSL::SSL::SSLSocket.new(s, context)
+      s.hostname = @address
+      s.sync_close = true
+      ssl_socket_connect(s, @open_timeout)
+      if context.verify_mode != OpenSSL::SSL::VERIFY_NONE
+        s.post_connection_check(@address)
+      end
+
+      @socket = InternetMessageIO.new(s,
+                              read_timeout: @read_timeout,
+                              debug_output: @debug_output)
+      @command = POP3Command.new(@socket, apop_stamp_check: false)
+
       if apop?
         @command.apop account, password
       else
@@ -888,11 +907,14 @@ module Net
 
   class POP3Command   #:nodoc: internal use only
 
-    def initialize(sock)
+    def initialize(sock, apop_stamp_check: true)
       @socket = sock
       @error_occurred = false
-      res = check_response(critical { recv_response() })
-      @apop_stamp = res.slice(/<[!-~]+@[!-~]+>/)
+
+      if apop_stamp_check
+        res = check_response(critical { recv_response() })
+        @apop_stamp = res.slice(/<[!-~]+@[!-~]+>/)
+      end
     end
 
     attr_reader :socket
@@ -906,6 +928,10 @@ module Net
         check_response_auth(get_response('USER %s', account))
         get_response('PASS %s', password)
       })
+    end
+
+    def stls
+      critical { getok 'STLS' }
     end
 
     def apop(account, password)
