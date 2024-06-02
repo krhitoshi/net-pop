@@ -577,6 +577,7 @@ module Net
       logging "POP session started: #{@address}:#{@port} (#{@apop ? 'APOP' : 'POP'})"
       on_connect
       @command = POP3Command.new(@socket)
+      @command.recv_greeting
 
       if starttls?
         @command.stls
@@ -916,17 +917,17 @@ module Net
     def initialize(sock, apop_stamp_check: true)
       @socket = sock
       @error_occurred = false
-
-      if apop_stamp_check
-        res = check_response(critical { recv_response() })
-        @apop_stamp = res.slice(/<[!-~]+@[!-~]+>/)
-      end
     end
 
     attr_reader :socket
 
     def inspect
       +"#<#{self.class} socket=#{@socket}>"
+    end
+
+    def recv_greeting
+      res = check_response(critical { recv_response() })
+      @apop_stamp = res.slice(/<[!-~]+@[!-~]+>/)
     end
 
     def auth(account, password)
