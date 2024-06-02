@@ -438,7 +438,7 @@ module Net
       @apop
     end
 
-    # does this instance use implicit SSL?
+    # does this instance use implicit SSL? (Not STARTTLS)
     def use_ssl?
       return !@ssl_params.nil? && !@starttls
     end
@@ -465,7 +465,7 @@ module Net
     end
 
     def enable_starttls(verify_or_params = {}, certs = nil, port = nil)
-      raise ArgumentError, "STARTTLS is not available with POP3S" if use_ssl?
+      raise ArgumentError, 'STARTTLS is not available with implicit SSL (POP3S)' if use_ssl?
       @starttls = true
       enable_ssl(verify_or_params, certs, port)
     end
