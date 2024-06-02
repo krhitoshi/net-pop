@@ -915,7 +915,7 @@ module Net
 
   class POP3Command   #:nodoc: internal use only
 
-    def initialize(sock, apop_stamp_check: true)
+    def initialize(sock)
       @socket = sock
       @error_occurred = false
     end
