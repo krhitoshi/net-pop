@@ -592,7 +592,7 @@ module Net
         @socket = InternetMessageIO.new(ssl_connect(s),
                                         read_timeout: @read_timeout,
                                         debug_output: @debug_output)
-        @command = POP3Command.new(@socket, apop_stamp_check: false)
+        @command = POP3Command.new(@socket)
       end
 
       if apop?
