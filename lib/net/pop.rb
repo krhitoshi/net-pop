@@ -360,10 +360,10 @@ module Net
     # Disable SSL for all new instances.
     def POP3.disable_ssl
       @ssl_params = nil
+      @starttls = false
     end
 
     def POP3.disable_starttls
-      @starttls = false
       disable_ssl
     end
 
