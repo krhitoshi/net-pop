@@ -374,7 +374,7 @@ module Net
       return @ssl_params
     end
 
-    # returns +true+ if POP3.ssl_params is set
+    # returns +true+ if all new instances use implicit SSL (Not STARTTLS)
     def POP3.use_ssl?
       return !@ssl_params.nil? && starttls?
     end
