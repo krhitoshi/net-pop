@@ -465,6 +465,7 @@ module Net
     end
 
     def enable_starttls(verify_or_params = {}, certs = nil, port = nil)
+      raise ArgumentError, "STARTTLS is not available with POP3S" if use_ssl? && !starttls?
       @starttls = true
       enable_ssl(verify_or_params, certs, port)
     end
@@ -516,7 +517,7 @@ module Net
 
     # The port number to connect to.
     def port
-      return @port || (use_ssl? ? POP3.default_pop3s_port : POP3.default_pop3_port)
+      return @port || (use_ssl? && !starttls? ? POP3.default_pop3s_port : POP3.default_pop3_port)
     end
 
     # Seconds to wait until a connection is opened.
