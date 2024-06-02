@@ -328,7 +328,7 @@ module Net
     # :call-seq:
     #    Net::POP.enable_ssl(params = {})
     #
-    # Enable SSL for all new instances.
+    # Enable implicit SSL (POP3S) for all new instances.
     # +params+ is passed to OpenSSL::SSLContext#set_params.
     def POP3.enable_ssl(*args)
       @ssl_params = create_ssl_params(*args)
@@ -374,7 +374,7 @@ module Net
       return @ssl_params
     end
 
-    # returns +true+ if all new instances use implicit SSL (Not STARTTLS)
+    # returns +true+ if all new instances use implicit SSL (POP3S)
     def POP3.use_ssl?
       return !@ssl_params.nil? && !starttls?
     end
@@ -465,7 +465,7 @@ module Net
     # :call-seq:
     #    Net::POP#enable_ssl(params = {})
     #
-    # Enables SSL for this instance.  Must be called before the connection is
+    # Enables implicit SSL (POP3S) for this instance.  Must be called before the connection is
     # established to have any effect.
     # +params[:port]+ is port to establish the SSL connection on; Defaults to 995.
     # +params+ (except :port) is passed to OpenSSL::SSLContext#set_params.
