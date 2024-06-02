@@ -455,7 +455,7 @@ module Net
       @apop
     end
 
-    # does this instance use implicit SSL? (Not STARTTLS)
+    # does this instance use implicit SSL (POP3S)?
     def use_ssl?
       return !@ssl_params.nil? && !starttls?
     end
