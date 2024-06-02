@@ -323,6 +323,7 @@ module Net
     #
 
     @ssl_params = nil
+    @starttls = false
 
     # :call-seq:
     #    Net::POP.enable_ssl(params = {})
@@ -331,6 +332,11 @@ module Net
     # +params+ is passed to OpenSSL::SSLContext#set_params.
     def POP3.enable_ssl(*args)
       @ssl_params = create_ssl_params(*args)
+    end
+
+    def POP3.enable_starttls(*args)
+      @starttls = true
+      enable_ssl(*args)
     end
 
     # Constructs proper parameters from arguments
@@ -356,6 +362,11 @@ module Net
       @ssl_params = nil
     end
 
+    def POP3.disable_starttls
+      disable_ssl
+      @starttls = false
+    end
+
     # returns the SSL Parameters
     #
     # see also POP3.enable_ssl
@@ -365,7 +376,11 @@ module Net
 
     # returns +true+ if POP3.ssl_params is set
     def POP3.use_ssl?
-      return !@ssl_params.nil?
+      return !@ssl_params.nil? && starttls?
+    end
+
+    def POP3.starttls?
+      @starttls
     end
 
     # returns whether verify_mode is enable from POP3.ssl_params
@@ -417,7 +432,7 @@ module Net
     def initialize(addr, port = nil, isapop = false)
       @address = addr
       @ssl_params = POP3.ssl_params
-      @starttls = false
+      @starttls = POP3.starttls?
       @port = port
       @apop = isapop
 
