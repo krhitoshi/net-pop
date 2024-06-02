@@ -438,9 +438,9 @@ module Net
       @apop
     end
 
-    # does this instance use SSL?
+    # does this instance use implicit SSL?
     def use_ssl?
-      return !@ssl_params.nil?
+      return !@ssl_params.nil? && !@starttls
     end
 
     def starttls?
@@ -465,7 +465,7 @@ module Net
     end
 
     def enable_starttls(verify_or_params = {}, certs = nil, port = nil)
-      raise ArgumentError, "STARTTLS is not available with POP3S" if use_ssl? && !starttls?
+      raise ArgumentError, "STARTTLS is not available with POP3S" if use_ssl?
       @starttls = true
       enable_ssl(verify_or_params, certs, port)
     end
@@ -517,7 +517,7 @@ module Net
 
     # The port number to connect to.
     def port
-      return @port || (use_ssl? && !starttls? ? POP3.default_pop3s_port : POP3.default_pop3_port)
+      return @port || (use_ssl? ? POP3.default_pop3s_port : POP3.default_pop3_port)
     end
 
     # Seconds to wait until a connection is opened.
@@ -569,7 +569,7 @@ module Net
       s = Timeout.timeout(@open_timeout, Net::OpenTimeout) do
         TCPSocket.open(@address, port)
       end
-      if use_ssl? && !starttls?
+      if use_ssl?
         s = ssl_connect(s)
       end
       @socket = InternetMessageIO.new(s,
