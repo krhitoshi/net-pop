@@ -331,12 +331,14 @@ module Net
     # Enable implicit SSL (POP3S) for all new instances.
     # +params+ is passed to OpenSSL::SSLContext#set_params.
     def POP3.enable_ssl(*args)
+      raise ArgumentError, 'implicit SSL (POP3S) is not available with STARTTLS' if starttls?
       @ssl_params = create_ssl_params(*args)
     end
 
     def POP3.enable_starttls(*args)
+      raise ArgumentError, 'STARTTLS is not available with implicit SSL (POP3S)' if use_ssl?
       @starttls = true
-      enable_ssl(*args)
+      @ssl_params = create_ssl_params(*args)
     end
 
     # Constructs proper parameters from arguments
@@ -470,13 +472,8 @@ module Net
     # +params[:port]+ is port to establish the SSL connection on; Defaults to 995.
     # +params+ (except :port) is passed to OpenSSL::SSLContext#set_params.
     def enable_ssl(verify_or_params = {}, certs = nil, port = nil)
-      begin
-        @ssl_params = verify_or_params.to_hash.dup
-        @port = @ssl_params.delete(:port) || @port
-      rescue NoMethodError
-        @ssl_params = POP3.create_ssl_params(verify_or_params, certs)
-        @port = port || @port
-      end
+      raise ArgumentError, 'implicit SSL (POP3S) is not available with STARTTLS' if starttls?
+      create_ssl_params(verify_or_params, certs, port)
     end
 
     # :call-seq:
@@ -489,8 +486,17 @@ module Net
     def enable_starttls(verify_or_params = {}, certs = nil, port = nil)
       raise ArgumentError, 'STARTTLS is not available with implicit SSL (POP3S)' if use_ssl?
       @starttls = true
-      enable_ssl(verify_or_params, certs, port)
+      create_ssl_params(verify_or_params, certs, port)
     end
+
+    def create_ssl_params(verify_or_params = {}, certs = nil, port = nil)
+      @ssl_params = verify_or_params.to_hash.dup
+      @port = @ssl_params.delete(:port) || @port
+    rescue NoMethodError
+      @ssl_params = POP3.create_ssl_params(verify_or_params, certs)
+      @port = port || @port
+    end
+    private :create_ssl_params
 
     # Disable SSL for all new instances.
     def disable_ssl
