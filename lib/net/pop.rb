@@ -464,6 +464,13 @@ module Net
       end
     end
 
+    # :call-seq:
+    #    Net::POP#enable_starttls(params = {})
+    #
+    # Enables STARTTLS for this instance.  Must be called before the connection is
+    # established to have any effect.
+    # +params[:port]+ is port to establish the SSL connection on; Defaults to 110.
+    # +params+ (except :port) is passed to OpenSSL::SSLContext#set_params.
     def enable_starttls(verify_or_params = {}, certs = nil, port = nil)
       raise ArgumentError, 'STARTTLS is not available with implicit SSL (POP3S)' if use_ssl?
       @starttls = true
