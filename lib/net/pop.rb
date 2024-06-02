@@ -455,7 +455,7 @@ module Net
 
     # does this instance use implicit SSL? (Not STARTTLS)
     def use_ssl?
-      return !@ssl_params.nil? && !@starttls
+      return !@ssl_params.nil? && !starttls?
     end
 
     def starttls?
