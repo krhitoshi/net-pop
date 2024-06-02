@@ -417,7 +417,7 @@ module Net
     def initialize(addr, port = nil, isapop = false)
       @address = addr
       @ssl_params = POP3.ssl_params
-      @startssl = false
+      @starttls = false
       @port = port
       @apop = isapop
 
@@ -443,8 +443,8 @@ module Net
       return !@ssl_params.nil?
     end
 
-    def startssl?
-      @startssl
+    def starttls?
+      @starttls
     end
 
     # :call-seq:
@@ -464,8 +464,8 @@ module Net
       end
     end
 
-    def enable_startssl(verify_or_params = {}, certs = nil, port = nil)
-      @startssl = true
+    def enable_starttls(verify_or_params = {}, certs = nil, port = nil)
+      @starttls = true
       enable_ssl(verify_or_params, certs, port)
     end
 
@@ -568,7 +568,7 @@ module Net
       s = Timeout.timeout(@open_timeout, Net::OpenTimeout) do
         TCPSocket.open(@address, port)
       end
-      if use_ssl? && !startssl?
+      if use_ssl? && !starttls?
         s = ssl_connect(s)
       end
       @socket = InternetMessageIO.new(s,
@@ -578,7 +578,7 @@ module Net
       on_connect
       @command = POP3Command.new(@socket)
 
-      if startssl?
+      if starttls?
         @command.stls
         @socket = InternetMessageIO.new(ssl_connect(s),
                                         read_timeout: @read_timeout,
