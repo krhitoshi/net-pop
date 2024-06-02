@@ -363,8 +363,8 @@ module Net
     end
 
     def POP3.disable_starttls
-      disable_ssl
       @starttls = false
+      disable_ssl
     end
 
     # returns the SSL Parameters
