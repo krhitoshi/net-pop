@@ -966,10 +966,6 @@ module Net
       })
     end
 
-    def stls
-      critical { getok 'STLS' }
-    end
-
     def apop(account, password)
       raise POPAuthenticationError, 'not APOP server; cannot login' \
                                                       unless @apop_stamp
@@ -1037,6 +1033,10 @@ module Net
           return table
         }
       end
+    end
+
+    def stls
+      critical { getok 'STLS' }
     end
 
     def quit
