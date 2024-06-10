@@ -22,6 +22,7 @@
 #
 
 require 'net/protocol'
+require 'base64'
 require 'digest/md5'
 require 'timeout'
 
@@ -523,23 +524,23 @@ module Net
     # closes the session after block call finishes.
     #
     # This method raises a POPAuthenticationError if authentication fails.
-    def start(account, password) # :yield: pop
+    def start(account, password, authtype = nil) # :yield: pop
       raise IOError, 'POP session already started' if @started
       if block_given?
         begin
-          do_start account, password
+          do_start account, password, authtype
           return yield(self)
         ensure
           do_finish
         end
       else
-        do_start account, password
+        do_start account, password, authtype
         return self
       end
     end
 
     # internal method for Net::POP3.start
-    def do_start(account, password) # :nodoc:
+    def do_start(account, password, authtype) # :nodoc:
       s = Timeout.timeout(@open_timeout, Net::OpenTimeout) do
         TCPSocket.open(@address, port)
       end
@@ -561,8 +562,11 @@ module Net
       logging "POP session started: #{@address}:#{@port} (#{@apop ? 'APOP' : 'POP'})"
       on_connect
       @command = POP3Command.new(@socket)
+
       if apop?
         @command.apop account, password
+      elsif authtype == :cram_md5
+        @command.auth_cram_md5 account, password
       else
         @command.auth account, password
       end
@@ -916,6 +920,16 @@ module Net
                      account,
                      Digest::MD5.hexdigest(@apop_stamp + password))
       })
+    end
+
+    def auth_cram_md5(account, password)
+      res = critical { get_response("AUTH CRAM-MD5") }
+      encoded_challenge = res.slice(/\+ .*\+/).sub(/^\+ /, '')
+      challenge = Base64.decode64(encoded_challenge)
+      digest = OpenSSL::HMAC.hexdigest('md5', password, challenge)
+      response = "#{account} #{digest}"
+      response_b64 = Base64.strict_encode64(response)
+      check_response_auth(critical { get_response(response_b64) })
     end
 
     def list
