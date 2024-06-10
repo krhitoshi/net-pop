@@ -924,6 +924,7 @@ module Net
 
     def auth_cram_md5(account, password)
       res = critical { get_response("AUTH CRAM-MD5") }
+      raise POPAuthenticationError, res unless /\A\+ / =~ res
       encoded_challenge = res.slice(/\+ .*\+/).sub(/^\+ /, '')
       challenge = Base64.decode64(encoded_challenge)
       digest = OpenSSL::HMAC.hexdigest('md5', password, challenge)
