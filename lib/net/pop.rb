@@ -984,14 +984,15 @@ module Net
     end
 
     def auth_cram_md5(account, password)
-      res = critical { get_response("AUTH CRAM-MD5") }
-      raise POPAuthenticationError, res unless /\A\+ / =~ res
-      encoded_challenge = res.split[1]
-      challenge = Base64.decode64(encoded_challenge)
-      digest = OpenSSL::HMAC.hexdigest('md5', password, challenge)
-      response = "#{account} #{digest}"
-      response_b64 = Base64.strict_encode64(response)
-      check_response_auth(critical { get_response(response_b64) })
+      check_response_auth(critical {
+        res = check_response_auth(get_response("AUTH CRAM-MD5"), /\A\+ /)
+        encoded_challenge = res.split[1]
+        challenge = Base64.decode64(encoded_challenge)
+        digest = OpenSSL::HMAC.hexdigest('md5', password, challenge)
+        response = "#{account} #{digest}"
+        response_b64 = Base64.strict_encode64(response)
+        get_response(response_b64)
+      })
     end
 
     def list
@@ -1082,8 +1083,8 @@ module Net
       res
     end
 
-    def check_response_auth(res)
-      raise POPAuthenticationError, res unless /\A\+OK/i =~ res
+    def check_response_auth(res, regex = /\A\+OK/i)
+      raise POPAuthenticationError, res unless regex =~ res
       res
     end
 
