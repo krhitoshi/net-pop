@@ -460,6 +460,7 @@ module Net
       return !@ssl_params.nil? && !starttls?
     end
 
+    # does this instance use STARTTLS?
     def starttls?
       @starttls
     end
@@ -501,7 +502,10 @@ module Net
     # Disable SSL for all new instances.
     def disable_ssl
       @ssl_params = nil
+      @starttls = false
     end
+
+    alias disable_starttls disable_ssl
 
     def ssl_connect(s)
       raise 'openssl library not installed' unless defined?(OpenSSL)
@@ -613,7 +617,7 @@ module Net
         @socket = InternetMessageIO.new(ssl_connect(s),
                                         read_timeout: @read_timeout,
                                         debug_output: @debug_output)
-        @command = POP3Command.new(@socket)
+        @command.socket = @socket
       end
 
       if apop?
@@ -948,7 +952,7 @@ module Net
       @error_occurred = false
     end
 
-    attr_reader :socket
+    attr_accessor :socket
 
     def inspect
       +"#<#{self.class} socket=#{@socket}>"
